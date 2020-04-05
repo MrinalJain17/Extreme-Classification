@@ -93,8 +93,12 @@ def construct(path, train=True):
 
     # Saving generated dataframes
     Path("../data/expanded").mkdir(parents=True, exist_ok=True)
-    features.to_csv(f"../data/expanded/{file_prefix}_features.csv", index=False)
-    labels.to_csv(f"../data/expanded/{file_prefix}_labels.csv", index=False)
+    features.to_csv(
+        f"../data/expanded/{file_prefix}_features.csv", index=False, header=False
+    )
+    labels.to_csv(
+        f"../data/expanded/{file_prefix}_labels.csv", index=False, header=False
+    )
     print(
         f"Saved dataframes as {file_prefix}_features.csv and {file_prefix}_labels.csv"
     )
