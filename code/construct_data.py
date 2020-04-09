@@ -76,7 +76,7 @@ def construct(path, train=True):
     temp = np.zeros((raw_data.shape[0], NUM_FEATURES))
     features = pd.DataFrame(temp)
 
-    temp = np.zeros((raw_data.shape[0], NUM_CLASSES), dtype=np.uint8)
+    temp = np.zeros((raw_data.shape[0], NUM_CLASSES))
     labels = pd.DataFrame(temp)
 
     def create_features(row):
