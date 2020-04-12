@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
+from utils import split
+
 tqdm.pandas()
 
 NUM_FEATURES = 5000
@@ -52,6 +54,9 @@ def construct(path, train=True):
         file_prefix = "dev"
         skiprows = dev_skiprows
 
+    # Default path for saving the dataframes
+    Path("../data/expanded").mkdir(parents=True, exist_ok=True)
+
     # We don't need the column "ex_id"
     raw_data = pd.read_csv(
         f"{path}/{file_prefix}.csv", usecols=["labels", "features"], skiprows=skiprows,
@@ -76,7 +81,7 @@ def construct(path, train=True):
     temp = np.zeros((raw_data.shape[0], NUM_FEATURES))
     features = pd.DataFrame(temp)
 
-    temp = np.zeros((raw_data.shape[0], NUM_CLASSES), dtype=np.uint8)
+    temp = np.zeros((raw_data.shape[0], NUM_CLASSES))
     labels = pd.DataFrame(temp)
 
     def create_features(row):
@@ -91,17 +96,28 @@ def construct(path, train=True):
     print("Creating labels...")
     raw_data.progress_apply(lambda x: create_labels(x), axis=1)
 
-    # Saving generated dataframes
-    Path("../data/expanded").mkdir(parents=True, exist_ok=True)
+    if train:
+        train_features, valid_features, train_labels, valid_labels = split(
+            features, labels
+        )
+        features, labels = train_features, train_labels
+
+        # Saving validation dataframes
+        valid_features.to_csv(
+            "../data/expanded/valid_features.csv", index=False, header=False
+        )
+        valid_labels.to_csv(
+            "../data/expanded/valid_labels.csv", index=False, header=False
+        )
+
+    # Saving training/dev dataframes
     features.to_csv(
         f"../data/expanded/{file_prefix}_features.csv", index=False, header=False
     )
     labels.to_csv(
         f"../data/expanded/{file_prefix}_labels.csv", index=False, header=False
     )
-    print(
-        f"Saved dataframes as {file_prefix}_features.csv and {file_prefix}_labels.csv"
-    )
+    print(f"Saved dataframes.")
 
 
 if __name__ == "__main__":
