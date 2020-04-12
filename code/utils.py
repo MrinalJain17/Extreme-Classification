@@ -1,23 +1,18 @@
 import numpy as np
 from sklearn.metrics import label_ranking_average_precision_score
+from sklearn.model_selection import train_test_split
 
 
-def split(features, labels, test_split=0.2, random_state=42):
+def split(features, labels, test_size=0.1, random_state=42):
     """TODO"""
-    rng = np.random.default_rng(random_state)
-    num_examples = features.shape[0]
-    num_valid = int(num_examples * test_split)
+    train_features, valid_features, train_labels, valid_labels = train_test_split(
+        features, labels, test_size=test_size, random_state=random_state
+    )
 
-    # Randomly dividing between training and validation data
-    index = np.arange(num_examples)
-    rng.shuffle(index)
-    valid_index = index[:num_valid]
-    train_index = index[num_valid:]
-
-    train_features = features.loc[train_index].reset_index(drop=True)
-    train_labels = labels.loc[train_index].reset_index(drop=True)
-    valid_features = features.loc[valid_index].reset_index(drop=True)
-    valid_labels = labels.loc[valid_index].reset_index(drop=True)
+    train_features.reset_index(drop=True, inplace=True)
+    train_labels.reset_index(drop=True, inplace=True)
+    valid_features.reset_index(drop=True, inplace=True)
+    valid_labels.reset_index(drop=True, inplace=True)
 
     return train_features, valid_features, train_labels, valid_labels
 
