@@ -1,13 +1,12 @@
 import warnings
 
 import numpy as np
-from sklearn.base import is_classifier
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import label_ranking_average_precision_score as LRAP
 from sklearn.neural_network import MLPClassifier
-from sklearn.neural_network._base import LOSS_FUNCTIONS
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils import gen_batches, shuffle
+from tqdm.auto import tqdm
 
 
 class ModifiedMLPClassifier(MLPClassifier):
@@ -64,7 +63,24 @@ class ModifiedMLPClassifier(MLPClassifier):
             max_fun=max_fun,
         )
         self.custom_validation_data = custom_validation_data
-        self.validation_loss_curve_ = []
+
+    def score(self, X, y, sample_weight=None):
+        """
+        Return the LRAP on the given test data and labels.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Test samples.
+        y : array-like of shape (n_samples, n_outputs)
+            True labels for X.
+        sample_weight : array-like of shape (n_samples,), default=None
+            Sample weights.
+        Returns
+        -------
+        score : float
+            LRAP of self.predict_proba(X) wrt. y.
+        """
+        return LRAP(y, self._predict(X), sample_weight=sample_weight)
 
     def _fit_stochastic(
         self,
@@ -103,17 +119,33 @@ class ModifiedMLPClassifier(MLPClassifier):
         early_stopping = self.early_stopping and not incremental
         if early_stopping:
             # don't stratify in multilabel classification
-            should_stratify = is_classifier(self) and self.n_outputs_ == 1
-            stratify = y if should_stratify else None
-            X, X_val, y, y_val = train_test_split(
-                X,
-                y,
-                random_state=self._random_state,
-                test_size=self.validation_fraction,
-                stratify=stratify,
-            )
-            if is_classifier(self):
-                y_val = self._label_binarizer.inverse_transform(y_val)
+            # should_stratify = is_classifier(self) and self.n_outputs_ == 1
+            # stratify = y if should_stratify else None
+            # X, X_val, y, y_val = train_test_split(
+            #     X,
+            #     y,
+            #     random_state=self._random_state,
+            #     test_size=self.validation_fraction,
+            #     stratify=stratify,
+            # )
+            # if is_classifier(self):
+            #     y_val = self._label_binarizer.inverse_transform(y_val)
+
+            # --------------------------- #
+            #    Custom validation set    #
+            # --------------------------- #
+
+            X_val = self.custom_validation_data[0]
+            y_val = self.custom_validation_data[1]
+            if type(X_val) is not np.ndarray:
+                X_val = X_val.to_numpy()
+            if type(y_val) is not np.ndarray:
+                y_val = y_val.to_numpy()
+
+            # --------------------------- #
+            #       Custom code end       #
+            # --------------------------- #
+
         else:
             X_val = None
             y_val = None
@@ -126,7 +158,7 @@ class ModifiedMLPClassifier(MLPClassifier):
             batch_size = np.clip(self.batch_size, 1, n_samples)
 
         try:
-            for it in range(self.max_iter):
+            for it in tqdm(range(self.max_iter), unit="iteration"):
                 if self.shuffle:
                     X, y = shuffle(X, y, random_state=self._random_state)
                 accumulated_loss = 0.0
@@ -154,59 +186,8 @@ class ModifiedMLPClassifier(MLPClassifier):
                 self.t_ += n_samples
                 self.loss_curve_.append(self.loss_)
 
-                # --------------------------- #
-                #   Custom validation check   #
-                # --------------------------- #
-
-                if self.custom_validation_data is not None:
-                    custom_X_valid = self.custom_validation_data[0]
-                    custom_y_valid = self.custom_validation_data[1]
-
-                    if type(custom_X_valid) is not np.ndarray:
-                        custom_X_valid = custom_X_valid.to_numpy()
-                    if type(custom_y_valid) is not np.ndarray:
-                        custom_y_valid = custom_y_valid.to_numpy()
-
-                    # Get validation loss
-                    # Code adapted from self._backprop()
-                    loss_func_name = self.loss
-                    if (
-                        loss_func_name == "log_loss"
-                        and self.out_activation_ == "logistic"
-                    ):
-                        loss_func_name = "binary_log_loss"
-
-                    valid_loss = LOSS_FUNCTIONS[loss_func_name](
-                        custom_y_valid, self._predict(custom_X_valid)
-                    )
-
-                    # Add L2 regularization term to loss
-                    temp_values = np.sum(
-                        np.array([np.dot(s.ravel(), s.ravel()) for s in self.coefs_])
-                    )
-                    valid_loss += (
-                        (0.5 * self.alpha) * temp_values / custom_X_valid.shape[0]
-                    )
-
-                    self.validation_loss_curve_.append(valid_loss)
-                    verbose_msg = (
-                        "Iteration %d, training loss = %.8f, validation loss = %.8f"
-                        % (self.n_iter_, self.loss_, valid_loss)
-                    )
-
-                else:
-                    valid_loss = None
-                    verbose_msg = "Iteration %d, training loss = %.8f" % (
-                        self.n_iter_,
-                        self.loss_,
-                    )
-
-                # --------------------------- #
-                #       Custom code end       #
-                # --------------------------- #
-
                 if self.verbose:
-                    print(verbose_msg)
+                    print("Iteration %d, loss = %.8f" % (self.n_iter_, self.loss_))
 
                 # update no_improvement_count based on training loss or
                 # validation score according to early_stopping
