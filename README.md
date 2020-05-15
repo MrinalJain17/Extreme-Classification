@@ -5,7 +5,7 @@ DS-GA 1003 (Machine Learning) - Group project on "Extreme Classification"
 ## Dataset
 
 1. Download `train.csv` and `dev.csv` from [here](https://worksheets.codalab.org/worksheets/0x0a35e4ca487b4892976188108704011c).
-2. Place the files inside the directory `data/raw/` in the root of the repository. **(Recommended)**
+2. Place the files inside the directory `data/raw/` in the root of the repository. **(Important)**
 3. Run the following command to convert sparse data to "normal" dataframes, from the root of the repository.
 
    ```bash

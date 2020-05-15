@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from utils import split
-
 tqdm.pandas()
 
 NUM_FEATURES = 5000
@@ -95,20 +93,6 @@ def construct(path, train=True):
     raw_data.progress_apply(lambda x: create_features(x), axis=1)
     print("Creating labels...")
     raw_data.progress_apply(lambda x: create_labels(x), axis=1)
-
-    if train:
-        train_features, valid_features, train_labels, valid_labels = split(
-            features, labels
-        )
-        features, labels = train_features, train_labels
-
-        # Saving validation dataframes
-        valid_features.to_csv(
-            "../data/expanded/valid_features.csv", index=False, header=False
-        )
-        valid_labels.to_csv(
-            "../data/expanded/valid_labels.csv", index=False, header=False
-        )
 
     # Saving training/dev dataframes
     features.to_csv(
