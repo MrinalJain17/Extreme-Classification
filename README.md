@@ -37,3 +37,6 @@ Refer to the [project tracker](https://github.com/MrinalJain17/Extreme-Classific
 - scikit-learn
 - matplotlib
 - tqdm
+- PyTorch
+- PyTorch-Lightning
+- Tensorboard (for visualizing results)
