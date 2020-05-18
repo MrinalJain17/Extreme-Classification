@@ -197,3 +197,4 @@ $RECYCLE.BIN/
 data/
 lightning_logs*/
 .vscode
+*.ckpt

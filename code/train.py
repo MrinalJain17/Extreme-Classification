@@ -2,6 +2,7 @@
 Usage
 -----
 
+python train.py
 python train.py --units 256 --dropout 0.2 --epochs 25
 
 """
@@ -43,7 +44,7 @@ class Net(pl.LightningModule):
 
         self.classifier = nn.Sequential(
             nn.Linear(NUM_FEATURES, units),
-            # nn.BatchNorm1d(units),
+            nn.BatchNorm1d(units),
             nn.LeakyReLU(0.05),
             nn.Dropout(dropout),
             nn.Linear(units, NUM_CLASSES),
@@ -110,19 +111,22 @@ class Net(pl.LightningModule):
 
 def main(args):
     model = Net(args)
-    trainer = Trainer(gpus=1, max_epochs=args.epochs, auto_lr_find=True)
+    trainer = Trainer(gpus=1, max_epochs=args.epochs)
     trainer.fit(model)
+    # trainer.save_checkpoint("saved_models/neural_network.ckpt")
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
 
     # parametrize the network
-    parser.add_argument("--units", type=int, default=1024)
-    parser.add_argument("--dropout", type=float, default=0.6)
+    parser.add_argument("--units", type=int, default=2048)
+    parser.add_argument("--dropout", type=float, default=0.8)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument(
+        "--lr", type=float, default=0.00158
+    )  # Default set using the learning rate finder
     parser.add_argument("--l2_penalty", type=float, default=0.0)
 
     args = parser.parse_args()
