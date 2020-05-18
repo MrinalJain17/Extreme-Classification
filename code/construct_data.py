@@ -4,6 +4,7 @@ Usage
 
 python construct_data.py
 python construct_data.py --test
+python construct_data.py --combine
 
 """
 
@@ -148,16 +149,40 @@ def construct_test_data(path):
     print(f"Saved dataframe.")
 
 
+def combine_datasets():
+    X_train = pd.read_csv(
+        "../data/expanded/train_features.csv", names=range(NUM_FEATURES)
+    )
+    y_train = pd.read_csv("../data/expanded/train_labels.csv", names=range(NUM_CLASSES))
+    X_valid = pd.read_csv(
+        "../data/expanded/dev_features.csv", names=range(NUM_FEATURES)
+    )
+    y_valid = pd.read_csv("../data/expanded/dev_labels.csv", names=range(NUM_CLASSES))
+
+    X_combined = pd.concat([X_train, X_valid], ignore_index=True)
+    y_combined = pd.concat([y_train, y_valid], ignore_index=True)
+
+    X_combined.to_csv(
+        "../data/expanded/combined_features.csv", index=False, header=False
+    )
+    y_combined.to_csv("../data/expanded/combined_labels.csv", index=False, header=False)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--test", action="store_true", default=False)
+    parser.add_argument("--combine", action="store_true", default=False)
     args = parser.parse_args()
 
-    if not args.test:
-        print("Constructing training data:")
-        construct("../data/raw")
-        print("Constructing development data:")
-        construct("../data/raw", train=False)
+    if args.combine:
+        print("Combining training and validation datasets: ")
+        combine_datasets()
     else:
-        print("Constructing testing data:")
-        construct_test_data("../data/raw")
+        if not args.test:
+            print("Constructing training data:")
+            construct("../data/raw")
+            print("Constructing development data:")
+            construct("../data/raw", train=False)
+        else:
+            print("Constructing testing data:")
+            construct_test_data("../data/raw")

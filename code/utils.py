@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.metrics import label_ranking_average_precision_score
-from sklearn.model_selection import train_test_split
 
 
 def LRAP(y_true, y_score):

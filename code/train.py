@@ -88,20 +88,32 @@ class Net(pl.LightningModule):
         )
 
     def prepare_data(self):
-        self.train_data = CSVDataset(
-            "../data/expanded/", standardize="./saved_models/scaler.pkl"
-        )
+        if self.hparams.combined:
+            standardize = "./saved_models/scaler_combined.pkl"
+        else:
+            standardize = "./saved_models/scaler.pkl"
+
+        self.train_data = CSVDataset("../data/expanded/", standardize=standardize)
         self.validation_data = CSVDataset(
             "../data/expanded/",
             csv_features="dev_features.csv",
             csv_labels="dev_labels.csv",
-            standardize="./saved_models/scaler.pkl",
+            standardize=standardize,
+        )
+
+        self.combined_data = torch.utils.data.ConcatDataset(
+            [self.train_data, self.validation_data]
         )
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.train_data, batch_size=self.hparams.batch_size, shuffle=True
-        )
+        if self.hparams.combined:
+            return torch.utils.data.DataLoader(
+                self.combined_data, batch_size=self.hparams.batch_size, shuffle=True
+            )
+        else:
+            return torch.utils.data.DataLoader(
+                self.train_data, batch_size=self.hparams.batch_size, shuffle=True
+            )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -128,6 +140,7 @@ if __name__ == "__main__":
         "--lr", type=float, default=0.00158
     )  # Default set using the learning rate finder
     parser.add_argument("--l2_penalty", type=float, default=0.0)
+    parser.add_argument("--combined", action="store_true", default=False)
 
     args = parser.parse_args()
 
