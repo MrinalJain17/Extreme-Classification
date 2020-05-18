@@ -195,5 +195,5 @@ $RECYCLE.BIN/
 ### Custom ###
 
 data/
-lightning_logs/
+lightning_logs*/
 .vscode
