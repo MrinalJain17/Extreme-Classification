@@ -2,14 +2,12 @@
 Usage
 -----
 
-python train.py --units 512 256 --dropout 0.5 0.2 --epochs 50
-python train.py --units 256 --dropout 0.2 --epochs 50 --lr 0.01
+python train.py --units 256 --dropout 0.2 --epochs 25
 
 """
 
 import random
 from argparse import ArgumentParser
-from collections import OrderedDict
 
 import numpy as np
 import pytorch_lightning as pl
@@ -43,23 +41,13 @@ class Net(pl.LightningModule):
         units = self.hparams.units
         dropout = self.hparams.dropout
 
-        # Supports only 1 or 2-layer architectures for now
         self.classifier = nn.Sequential(
-            OrderedDict(
-                [
-                    ("dropout_input", nn.Dropout(0.15)),
-                    ("fc1", nn.Linear(NUM_FEATURES, units[0])),
-                    ("relu1", nn.ReLU()),
-                    ("dropout1", nn.Dropout(dropout[0])),
-                ]
-            )
+            nn.Linear(NUM_FEATURES, units),
+            # nn.BatchNorm1d(units),
+            nn.LeakyReLU(0.05),
+            nn.Dropout(dropout),
+            nn.Linear(units, NUM_CLASSES),
         )
-        if len(units) > 1:
-            self.classifier.add_module("fc2", nn.Linear(units[0], units[-1]))
-            self.classifier.add_module("relu2", nn.ReLU())
-            self.classifier.add_module("dropout2", nn.Dropout(dropout[-1]))
-
-        self.classifier.add_module("output", nn.Linear(units[-1], NUM_CLASSES))
 
     def forward(self, x):
         x = self.classifier(x)
@@ -122,7 +110,7 @@ class Net(pl.LightningModule):
 
 def main(args):
     model = Net(args)
-    trainer = Trainer(gpus=1, max_epochs=args.epochs)
+    trainer = Trainer(gpus=1, max_epochs=args.epochs, auto_lr_find=True)
     trainer.fit(model)
 
 
@@ -130,22 +118,14 @@ if __name__ == "__main__":
     parser = ArgumentParser()
 
     # parametrize the network
-    parser.add_argument("--units", type=int, nargs="+", default=512)
-    parser.add_argument(
-        "--dropout", type=float, nargs="+", default=0.4
-    )  # Should be specified for each fully-connected layer
+    parser.add_argument("--units", type=int, default=1024)
+    parser.add_argument("--dropout", type=float, default=0.6)
     parser.add_argument("--batch_size", type=int, default=512)
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--l2_penalty", type=float, default=0.0)
 
     args = parser.parse_args()
-
-    if not isinstance(args.units, list):
-        args.units = [args.units]
-    if not isinstance(args.dropout, list):
-        args.dropout = [args.dropout]
-    assert len(args.units) == len(args.dropout)
 
     # Train
     main(args)
