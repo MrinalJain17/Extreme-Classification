@@ -125,7 +125,7 @@ def main(args):
     model = Net(args)
     trainer = Trainer(gpus=1, max_epochs=args.epochs)
     trainer.fit(model)
-    # trainer.save_checkpoint("saved_models/neural_network.ckpt")
+    # trainer.save_checkpoint("saved_models/neural_network_combined.ckpt")
 
 
 if __name__ == "__main__":
