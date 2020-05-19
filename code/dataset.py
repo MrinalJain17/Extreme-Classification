@@ -26,11 +26,14 @@ class CSVDataset(Dataset):
             .to_numpy()
             .astype("float32")
         )
-        self.labels = (
-            pd.read_csv(self.root_dir / csv_labels, names=range(NUM_CLASSES))
-            .to_numpy()
-            .astype("float32")
-        )
+        if csv_labels is not None:
+            self.labels = (
+                pd.read_csv(self.root_dir / csv_labels, names=range(NUM_CLASSES))
+                .to_numpy()
+                .astype("float32")
+            )
+        else:
+            self.labels = None
 
         self.features = np.log1p(self.features)
 
@@ -45,17 +48,10 @@ class CSVDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        batch_features = torch.from_numpy(self.features[idx, :])
-        batch_labels = torch.from_numpy(self.labels[idx, :])
-
-        return batch_features, batch_labels
-
-
-# Used this piece of code to obtain the class weights, as required for BCE loss in PyTorch
-#
-# y_train = pd.read_csv("../../data/expanded/train_labels.csv", names=range(NUM_CLASSES))
-#
-# num_samples = y_train.shape[0]
-# class_weight = (num_samples - y_train.sum()) / y_train.sum()
-# class_weight = class_weight.to_numpy().astype("float32")
-# np.savez("class_weight", class_weight=class_weight)
+        if self.labels is not None:
+            batch_features = torch.from_numpy(self.features[idx, :])
+            batch_labels = torch.from_numpy(self.labels[idx, :])
+            return batch_features, batch_labels
+        else:
+            batch_features = torch.from_numpy(self.features[idx, :])
+            return batch_features
